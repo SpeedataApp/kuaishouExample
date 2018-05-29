@@ -2,6 +2,7 @@ package com.kuaishouexample;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
@@ -10,17 +11,20 @@ import android.os.Message;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.serialport.DeviceControl;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.honeywell.barcode.ActiveCamera;
+import com.honeywell.barcode.BarcodeBounds;
 import com.honeywell.barcode.HSMDecodeComponent;
 import com.honeywell.barcode.HSMDecodeResult;
 import com.honeywell.barcode.HSMDecoder;
@@ -28,6 +32,7 @@ import com.honeywell.barcode.Symbology;
 import com.kuaishouexample.base.BaseAct;
 import com.kuaishouexample.db.KuaiShouDatas;
 import com.kuaishouexample.util.DBUitl;
+import com.kuaishouexample.util.DrawView;
 import com.kuaishouexample.util.SettingUtils;
 import com.kuaishouexample.util.SharedPreferencesUitl;
 import com.kuaishouexample.view.CustomToolBar;
@@ -101,6 +106,8 @@ public class MainActivity extends BaseAct implements WeightInterface.DisplayWeig
 
     private Queue<String> BarCodeQueue = new ArrayDeque<>();//条码队列
     private Button btnTakePicture;//测试专用
+    private FrameLayout frameLayout;
+    private DrawView drawView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,7 +117,9 @@ public class MainActivity extends BaseAct implements WeightInterface.DisplayWeig
 
         initView();
         initLibrary();
+        frameLayout = findViewById(R.id.framelayout);
     }
+
 
     private void initView() {
         customToolBar = findViewById(R.id.title_bar_layout);
@@ -498,8 +507,40 @@ public class MainActivity extends BaseAct implements WeightInterface.DisplayWeig
 
     }
 
+    private void draw() {
+        DrawView drawView = new DrawView(this);
+        drawView.invalidate();
+        frameLayout.addView(drawView);
+
+    }
+
     @Override
     public void displayBarcodeData(String s, long l, HSMDecodeResult[] hsmDecodeResults) {
+
+        BarcodeBounds barcodeBounds = hsmDecodeResults[0].getBarcodeBounds();
+        Point TopLeft = barcodeBounds.getTopLeft();
+        Point TopRight = barcodeBounds.getTopRight();
+        Point BottomLeft = barcodeBounds.getBottomLeft();
+        Point BottomRight = barcodeBounds.getBottomRight();
+        Point[] points = {TopLeft, TopRight, BottomLeft, BottomRight};
+        DisplayMetrics dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
+        int widthPixels= dm.widthPixels;
+        int heightPixels= dm.heightPixels;
+//        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+//        float t = mHsmDecodeComponent.getRight();
+//        float left = mHsmDecodeComponent.getY();
+//        layoutParams.rightMargin = (int) t;
+//        this.addContentView(null,layoutParams);
+        Log.i("pading", ": " + widthPixels + heightPixels);
+
+        if (drawView != null) {
+            mHsmDecodeComponent.removeView(drawView);
+        }
+        drawView = new DrawView(this, points);
+        Log.i("point", "\n" + TopLeft + "\n" + TopRight + "\n" + BottomLeft + "\n" + BottomRight);
+        drawView.invalidate();
+        mHsmDecodeComponent.addView(drawView);
 //************************
 //        hsmDecoder.enableSound(true);
 //        StringBuilder result = new StringBuilder();
